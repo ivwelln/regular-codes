@@ -6,14 +6,11 @@ from pydantic import SecretStr, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
-SERVICE_DIR = Path(__file__).resolve().parents[2] 
 _secrets_dir = Path(os.getenv("APP_SECRETS_DIR", "/run/secrets"))
 SECRETS_DIR = _secrets_dir if _secrets_dir.is_dir() else None
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(SERVICE_DIR / ".env", SERVICE_DIR / ".env.local"),
-        env_file_encoding="utf-8",
         env_prefix="APP_",
         secrets_dir=SECRETS_DIR,
         frozen=True,
