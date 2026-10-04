@@ -1,0 +1,18 @@
+services:
+  backend:
+    build: 
+      target: dev
+    ports:
+      - "127.0.0.1:8000:8000"
+    develop:
+      watch:
+        - action: sync
+          path: ./backend/app
+          target: /app/app
+        - action: sync
+          path: ./backend/tests
+          target: /app/tests
+        - action: rebuild
+          path: ./backend/uv.lock
+        - action: rebuild
+          path: ./backend/Dockerfile

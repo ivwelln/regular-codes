@@ -1,5 +1,5 @@
 [project]
-name = "regular-codes"
+name = "regular-codes-backend"
 version = "0.1.0"
 description = "Приложение для автоматической активации промокодов на серверах сообщества по игре Rust."
 requires-python = ">=3.12"
@@ -8,5 +8,5 @@ dependencies = [
     "asyncpg>=0.31.0",
     "fastapi[standard-no-fastapi-cloud-cli]>=0.142.2",
     "pydantic-settings>=2.15.0",
-    "sqlalchemy>=2.1.2",
+    "sqlalchemy[asyncio]>=2.1.2",
 ]

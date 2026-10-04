@@ -1,0 +1,36 @@
+services:
+  db: 
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${DB_USER:-app}
+      POSTGRES_DB: ${DB_NAME:-app}
+      POSTGRES_PASSWORD_FILE: /run/secrets/app_db_password
+    secrets:
+      - app_db_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+  
+  backend:
+    build: 
+      context: ./backend
+      target: prod
+    environment:
+      APP_DB_HOST: db
+    secrets:
+      - app_db_password
+    depends_on:
+      db:
+        condition: service_healthy
+  
+secrets:
+  app_db_password:
+    file: ./secrets/app_db_password
+
+volumes:
+  pgdata:
