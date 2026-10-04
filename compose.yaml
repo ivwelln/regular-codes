@@ -1,3 +1,13 @@
+x-backend: &backend
+  build: 
+    context: ./backend
+    target: prod
+  environment:
+    APP_DB_HOST: db
+    APP_DB_NAME: ${DB_NAME:-app}
+    APP_DB_USER: ${DB_USER:-app}
+  secrets:
+    - app_db_password
 services:
   db: 
     image: postgres:17
@@ -15,18 +25,21 @@ services:
       timeout: 3s
       retries: 10
       start_period: 30s
-  
-  backend:
-    build: 
-      context: ./backend
-      target: prod
-    environment:
-      APP_DB_HOST: db
-    secrets:
-      - app_db_password
+
+  migrate:
+    <<: *backend
+    command: ["alembic", "upgrade", "head"]
     depends_on:
       db:
         condition: service_healthy
+  
+  backend:
+    <<: *backend
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
   
 secrets:
   app_db_password:

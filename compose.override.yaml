@@ -1,9 +1,17 @@
 services:
+  migrate:
+    build: 
+      target: dev
+    volumes:
+      - ./backend/migrations:/app/migrations
+
   backend:
     build: 
       target: dev
     ports:
       - "127.0.0.1:8000:8000"
+    volumes:
+      - ./backend/migrations:/app/migrations
     develop:
       watch:
         - action: sync
