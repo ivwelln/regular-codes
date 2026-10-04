@@ -22,6 +22,8 @@ services:
       target: prod
     environment:
       APP_DB_HOST: db
+      APP_DB_USER: ${DB_USER:-app}
+      APP_DB_NAME: ${DB_NAME:-app}
     secrets:
       - app_db_password
     depends_on:
