@@ -1,6 +1,4 @@
-.git 
-
-.env
+.git
 
 .env*
 
@@ -10,5 +8,6 @@
 
 **/*.pyc
 
-secrets/
+.pytest_cache/
 
+.ruff_cache/
