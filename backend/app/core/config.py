@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     db_max_overflow: int = Field(default=5, ge=0)
     db_echo: bool = False
 
+    yandex_api_key: SecretStr = Field(min_length=1)
+    yandex_folder_id: str = Field(min_length=1)
+    yandex_model: str = "yandexgpt-5-lite"
+    yandex_base_url: str = "https://ai.api.cloud.yandex.net/v1"
+    yandex_timeout: float = Field(default=30, gt=0)
+
     @property
     def db_url(self) -> URL:
         return URL.create(
@@ -41,6 +47,10 @@ class Settings(BaseSettings):
             password=self.db_password.get_secret_value(),
             port=self.db_port,
         )
+
+    @property
+    def yandex_model_uri(self) -> str:
+        return f"gpt://{self.yandex_folder_id}/{self.yandex_model}"
 
 
 @lru_cache
