@@ -16,3 +16,5 @@ secrets/*
 .vscode/
 
 .pytest_cache/
+
+.ruff_cache
