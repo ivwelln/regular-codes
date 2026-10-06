@@ -2,12 +2,13 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import SecretStr, Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
 _secrets_dir = Path(os.getenv("APP_SECRETS_DIR", "/run/secrets"))
 SECRETS_DIR = _secrets_dir if _secrets_dir.is_dir() else None
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -16,9 +17,9 @@ class Settings(BaseSettings):
         frozen=True,
         extra="ignore",
     )
-    
+
     debug: bool = False
-    
+
     db_password: SecretStr
     db_user: str = "app"
     db_name: str = "app"
@@ -29,7 +30,7 @@ class Settings(BaseSettings):
     db_pool_pre_ping: bool = True
     db_max_overflow: int = Field(default=5, ge=0)
     db_echo: bool = False
-    
+
     @property
     def db_url(self) -> URL:
         return URL.create(
@@ -40,6 +41,7 @@ class Settings(BaseSettings):
             password=self.db_password.get_secret_value(),
             port=self.db_port,
         )
+
 
 @lru_cache
 def get_settings() -> Settings:
