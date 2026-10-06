@@ -6,8 +6,10 @@ x-backend: &backend
     APP_DB_HOST: db
     APP_DB_NAME: ${DB_NAME:-app}
     APP_DB_USER: ${DB_USER:-app}
+    APP_YANDEX_FOLDER_ID: ${YANDEX_FOLDER_ID}
   secrets:
     - app_db_password
+    - app_yandex_api_key
 services:
   db: 
     image: postgres:17
@@ -44,6 +46,8 @@ services:
 secrets:
   app_db_password:
     file: ./secrets/app_db_password
+  app_yandex_api_key:
+    file: ./secrets/app_yandex_api_key
 
 volumes:
   pgdata:
