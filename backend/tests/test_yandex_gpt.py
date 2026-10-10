@@ -3,7 +3,7 @@ from app.core.config import Settings
 
 
 def make_settings(**overrides) -> Settings:
-    values = {"db_password": "x", "yandex_api_key": "secret-key", "yandex_folder_id": "b1gtest"}
+    values = {"db_password": "x", "yandex_api_key": "secret-key", "yandex_folder_id": "b1gtest", "session_encryption_key": "test"}
     return Settings(**(values | overrides))
 
 
