@@ -39,7 +39,7 @@ class Settings(BaseSettings):
 
     gamestores_base_url: str = "https://syndicate.gamestores.app/api/v1"
     gamestores_timeout: float = Field(default=15, gt=0)
-    
+
     session_encryption_key: SecretStr = Field(min_length=1)
 
     @property
