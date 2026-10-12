@@ -8,6 +8,7 @@ def make_settings(**overrides) -> Settings:
         "yandex_api_key": "secret-key",
         "yandex_folder_id": "b1gtest",
         "session_encryption_key": "test",
+        "admin_password": "test-password",
     }
     return Settings(**(values | overrides))
 

@@ -52,6 +52,7 @@ def test_db_settings() -> Settings:
         yandex_api_key="test",
         yandex_folder_id="test",
         session_encryption_key="test",
+        admin_password="test-password",
     )
     asyncio.run(_recreate_test_database(settings))
     return settings

@@ -42,6 +42,9 @@ class Settings(BaseSettings):
 
     session_encryption_key: SecretStr = Field(min_length=1)
 
+    admin_username: str = "admin"
+    admin_password: SecretStr = Field(min_length=1)
+
     @property
     def db_url(self) -> URL:
         return URL.create(
