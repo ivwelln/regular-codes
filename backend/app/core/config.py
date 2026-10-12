@@ -16,6 +16,7 @@ class Settings(BaseSettings):
         secrets_dir=SECRETS_DIR,
         frozen=True,
         extra="ignore",
+        hide_input_in_errors=True,
     )
 
     debug: bool = False
@@ -39,6 +40,11 @@ class Settings(BaseSettings):
 
     gamestores_base_url: str = "https://syndicate.gamestores.app/api/v1"
     gamestores_timeout: float = Field(default=15, gt=0)
+
+    session_encryption_key: SecretStr = Field(min_length=1)
+
+    admin_username: str = "admin"
+    admin_password: SecretStr = Field(min_length=1)
 
     @property
     def db_url(self) -> URL:

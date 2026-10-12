@@ -10,6 +10,8 @@ x-backend: &backend
   secrets:
     - app_db_password
     - app_yandex_api_key
+    - app_session_encryption_key
+    - app_admin_password
 services:
   db: 
     image: postgres:17
@@ -48,6 +50,10 @@ secrets:
     file: ./secrets/app_db_password
   app_yandex_api_key:
     file: ./secrets/app_yandex_api_key
+  app_session_encryption_key:
+    file: ./secrets/app_session_encryption_key
+  app_admin_password:
+    file: ./secrets/app_admin_password
 
 volumes:
   pgdata:
