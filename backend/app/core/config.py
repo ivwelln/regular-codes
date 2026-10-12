@@ -16,6 +16,7 @@ class Settings(BaseSettings):
         secrets_dir=SECRETS_DIR,
         frozen=True,
         extra="ignore",
+        hide_input_in_errors=True,
     )
 
     debug: bool = False
