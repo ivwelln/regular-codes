@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.clients.gamestores import ActivationResult, GameStoresClient, StoreUnavailableError
 from app.core.crypto import SessionCipher
@@ -52,6 +52,17 @@ async def activate_code(
             break
 
     return activations
+
+
+async def activate_codes(
+    session_factory: async_sessionmaker[AsyncSession],
+    store: GameStoresClient,
+    cipher: SessionCipher,
+    codes: list[str],
+) -> None:
+    async with session_factory() as session:
+        for code in codes:
+            await activate_code(session, store, cipher, code)
 
 
 async def _save_activation(

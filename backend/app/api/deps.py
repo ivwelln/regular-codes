@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.clients.gamestores import GameStoresClient
 from app.core.config import Settings, get_settings
@@ -17,6 +17,10 @@ basic_auth = HTTPBasic()
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
     async with request.app.state.session_factory() as session:
         yield session
+
+
+async def get_session_factory(request: Request) -> async_sessionmaker[AsyncSession]:
+    return request.app.state.session_factory
 
 
 def get_promo_extractor(request: Request) -> PromoExtractor:
@@ -50,6 +54,7 @@ def require_admin(
 
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+SessionFactoryDep = Annotated[async_sessionmaker[AsyncSession], Depends(get_session_factory)]
 PromoExtractorDep = Annotated[PromoExtractor, Depends(get_promo_extractor)]
 StoreDep = Annotated[GameStoresClient, Depends(get_store)]
 SessionCipherDep = Annotated[SessionCipher, Depends(get_session_cipher)]

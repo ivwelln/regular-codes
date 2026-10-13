@@ -6,7 +6,12 @@ from pathlib import Path
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncConnection,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.pool import NullPool
 
 from app.core.config import Settings
@@ -59,18 +64,27 @@ def test_db_settings() -> Settings:
 
 
 @pytest.fixture
-async def db_session(test_db_settings: Settings) -> AsyncIterator[AsyncSession]:
+async def db_connection(test_db_settings: Settings) -> AsyncIterator[AsyncConnection]:
     engine = create_async_engine(test_db_settings.db_url, poolclass=NullPool)
     async with engine.connect() as conn:
         transaction = await conn.begin()
-        session = AsyncSession(
-            bind=conn,
-            expire_on_commit=False,
-            join_transaction_mode="create_savepoint",
-        )
         try:
-            yield session
+            yield conn
         finally:
-            await session.close()
             await transaction.rollback()
     await engine.dispose()
+
+
+@pytest.fixture
+def db_session_factory(db_connection: AsyncConnection) -> async_sessionmaker[AsyncSession]:
+    return async_sessionmaker(
+        bind=db_connection, expire_on_commit=False, join_transaction_mode="create_savepoint"
+    )
+
+
+@pytest.fixture
+async def db_session(
+    db_session_factory: async_sessionmaker[AsyncSession],
+) -> AsyncIterator[AsyncSession]:
+    async with db_session_factory() as session:
+        yield session

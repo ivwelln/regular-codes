@@ -1,11 +1,20 @@
 import pytest
+from cryptography.fernet import Fernet
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_promo_extractor, get_session
+from app.api.deps import (
+    get_promo_extractor,
+    get_session,
+    get_session_cipher,
+    get_session_factory,
+    get_store,
+)
+from app.clients.gamestores import ActivationOutcome, ActivationResult
+from app.core.crypto import SessionCipher
 from app.main import app
-from app.models import Message, MessageStatus, PromoCode
+from app.models import Account, Activation, ActivationStatus, Message, MessageStatus, PromoCode
 from app.services.promo_extractor import PromoExtractionError
 
 
@@ -24,19 +33,58 @@ class FakeExtractor:
         return self.codes
 
 
+class FakeStore:
+    """Активирует любой код и запоминает, какие коды пробовали."""
+
+    def __init__(self) -> None:
+        self.codes: list[str] = []
+
+    async def use_promo_code(self, session: str, code: str) -> ActivationOutcome:
+        self.codes.append(code)
+        return ActivationOutcome(ActivationResult.ACTIVATED, "ok")
+
+
 @pytest.fixture
 def extractor() -> FakeExtractor:
     return FakeExtractor()
 
 
 @pytest.fixture
-def api(client: AsyncClient, db_session: AsyncSession, extractor: FakeExtractor) -> AsyncClient:
+def store() -> FakeStore:
+    return FakeStore()
+
+
+@pytest.fixture
+def cipher() -> SessionCipher:
+    return SessionCipher(Fernet.generate_key().decode())
+
+
+@pytest.fixture
+def api(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    db_session_factory,
+    extractor: FakeExtractor,
+    store: FakeStore,
+    cipher: SessionCipher,
+) -> AsyncClient:
     async def override_get_session():
         yield db_session
 
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_promo_extractor] = lambda: extractor
+    app.dependency_overrides[get_session_factory] = lambda: db_session_factory
+    app.dependency_overrides[get_store] = lambda: store
+    app.dependency_overrides[get_session_cipher] = lambda: cipher
     return client
+
+
+@pytest.fixture
+async def account(db_session: AsyncSession, cipher: SessionCipher) -> Account:
+    account = Account(steam_id="1", username="ivan", encrypted_session=cipher.encrypt("session"))
+    db_session.add(account)
+    await db_session.commit()
+    return account
 
 
 def message_payload(external_id: str = "1", text: str = "Промокод RUST2026") -> dict:
@@ -119,3 +167,24 @@ async def test_rejects_invalid_payload(api, extractor, payload) -> None:
 
     assert response.status_code == 422
     assert extractor.calls == []
+
+
+async def test_found_codes_are_activated_in_background(api, db_session, extractor, store, account):
+    extractor.codes = ["RUST2026", "WIPEDAY"]
+
+    response = await api.post("/api/v1/messages", json=message_payload())
+
+    assert response.status_code == 200
+    assert store.codes == ["RUST2026", "WIPEDAY"]
+    activations = await db_session.scalars(select(Activation).order_by(Activation.id))
+    assert [(a.code, a.status) for a in activations] == [
+        ("RUST2026", ActivationStatus.ACTIVATED),
+        ("WIPEDAY", ActivationStatus.ACTIVATED),
+    ]
+
+
+async def test_nothing_is_activated_without_codes(api, extractor, store, account) -> None:
+    response = await api.post("/api/v1/messages", json=message_payload(text="Вайп в пятницу"))
+
+    assert response.status_code == 200
+    assert store.codes == []
