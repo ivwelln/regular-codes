@@ -36,7 +36,8 @@ class Settings(BaseSettings):
     yandex_folder_id: str = Field(min_length=1)
     yandex_model: str = "yandexgpt-5-lite"
     yandex_base_url: str = "https://ai.api.cloud.yandex.net/v1"
-    yandex_timeout: float = Field(default=30, gt=0)
+    yandex_timeout: float = Field(default=10, gt=0)
+    yandex_max_retries: int = Field(default=1, ge=0)
 
     gamestores_base_url: str = "https://syndicate.gamestores.app/api/v1"
     gamestores_timeout: float = Field(default=15, gt=0)
