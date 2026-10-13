@@ -39,12 +39,32 @@ services:
   
   backend:
     <<: *backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 1s
     depends_on:
       db:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-  
+
+  discord-bot:
+    build:
+      context: ./bots/discord
+      target: prod
+    init: true
+    environment:
+      BOT_CHANNEL_IDS: ${DISCORD_CHANNEL_IDS}
+    secrets:
+      - bot_discord_token
+    depends_on:
+      backend:
+        condition: service_healthy
+
 secrets:
   app_db_password:
     file: ./secrets/app_db_password
@@ -54,6 +74,8 @@ secrets:
     file: ./secrets/app_session_encryption_key
   app_admin_password:
     file: ./secrets/app_admin_password
+  bot_discord_token:
+    file: ./secrets/bot_discord_token
 
 volumes:
   pgdata:
