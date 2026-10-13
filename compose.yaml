@@ -7,13 +7,6 @@ x-backend: &backend
     APP_DB_NAME: ${DB_NAME:-app}
     APP_DB_USER: ${DB_USER:-app}
     APP_YANDEX_FOLDER_ID: ${YANDEX_FOLDER_ID}
-  healthcheck:
-    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)" ]
-    interval: 30s
-    timeout: 5s
-    retries: 3
-    start_period: 10s
-    start_interval: 1s
   secrets:
     - app_db_password
     - app_yandex_api_key
@@ -46,6 +39,13 @@ services:
   
   backend:
     <<: *backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 1s
     depends_on:
       db:
         condition: service_healthy
