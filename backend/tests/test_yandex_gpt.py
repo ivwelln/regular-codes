@@ -20,10 +20,10 @@ def test_model_uri_includes_folder_and_model() -> None:
 
 
 async def test_client_uses_yandex_settings() -> None:
-    settings = make_settings(yandex_timeout=10)
+    settings = make_settings(yandex_timeout=5, yandex_max_retries=0)
 
     async with create_yandexgpt_client(settings) as client:
         assert client.api_key == "secret-key"
         assert client.project == "b1gtest"
         assert str(client.base_url) == "https://ai.api.cloud.yandex.net/v1/"
-        assert client.timeout == 10
+        assert client.timeout == 5
