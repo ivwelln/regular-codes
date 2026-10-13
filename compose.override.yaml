@@ -28,3 +28,16 @@ services:
           path: ./backend/uv.lock
         - action: rebuild
           path: ./backend/Dockerfile
+
+  discord-bot:
+    build:
+      target: dev
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./bots/discord/bot
+          target: /app/bot
+        - action: rebuild
+          path: ./bots/discord/uv.lock
+        - action: rebuild
+          path: ./bots/discord/Dockerfile
