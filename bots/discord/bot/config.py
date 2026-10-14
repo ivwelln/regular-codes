@@ -21,3 +21,5 @@ class Settings(BaseSettings):
     channel_ids: frozenset[int] = Field(min_length=1)
     backend_url: str = "http://backend:8000/api/v1"
     backend_timeout: float = Field(default=30, gt=0)
+
+    history_days: int = Field(default=7, ge=0)
