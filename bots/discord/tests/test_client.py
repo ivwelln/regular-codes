@@ -1,5 +1,7 @@
+from datetime import timedelta
 from types import SimpleNamespace
 
+import discord
 import httpx2
 import pytest
 
@@ -22,6 +24,22 @@ class FakeBackend:
         return ["RUST2026"]
 
 
+class FakeChannel:
+    """Отдаёт заданную историю сообщений и запоминает, как её запросили."""
+
+    def __init__(self) -> None:
+        self.messages: list[SimpleNamespace] = []
+        self.error: Exception | None = None
+        self.history_kwargs: dict = {}
+
+    async def history(self, **kwargs):
+        self.history_kwargs = kwargs
+        if self.error is not None:
+            raise self.error
+        for message in self.messages:
+            yield message
+
+
 @pytest.fixture
 def backend() -> FakeBackend:
     return FakeBackend()
@@ -29,12 +47,19 @@ def backend() -> FakeBackend:
 
 @pytest.fixture
 def bot(backend: FakeBackend) -> PromoBot:
-    return PromoBot(backend, frozenset({CHANNEL_ID}))
+    return PromoBot(backend, frozenset({CHANNEL_ID}), catch_up_delay=0)
 
 
-def make_message(channel_id: int = CHANNEL_ID, content: str = "Промокод RUST2026"):
+@pytest.fixture
+def channel(bot: PromoBot, monkeypatch) -> FakeChannel:
+    channel = FakeChannel()
+    monkeypatch.setattr(bot, "get_channel", {CHANNEL_ID: channel}.get)
+    return channel
+
+
+def make_message(message_id: int = 555, channel_id: int = CHANNEL_ID, content: str = "Промокод RUST2026"):
     return SimpleNamespace(
-        id=555, channel=SimpleNamespace(id=channel_id), content=content, embeds=[]
+        id=message_id, channel=SimpleNamespace(id=channel_id), content=content, embeds=[]
     )
 
 
@@ -66,3 +91,38 @@ async def test_survives_backend_error(bot, backend, caplog) -> None:
     await bot.on_message(make_message())
 
     assert "message 555 was not sent to backend" in caplog.text
+
+
+async def test_catches_up_on_history_after_login(bot, backend, channel) -> None:
+    channel.messages = [make_message(1, content="Код OLD1"), make_message(2, content="Код OLD2")]
+
+    await bot.on_ready()
+
+    assert backend.sent == [("1", "Код OLD1"), ("2", "Код OLD2")]
+
+
+async def test_reads_history_of_last_days_from_oldest(bot, channel) -> None:
+    await bot.on_ready()
+
+    week_ago = discord.utils.utcnow() - timedelta(days=7)
+    assert abs(channel.history_kwargs["after"] - week_ago) < timedelta(seconds=5)
+    assert channel.history_kwargs["limit"] is None
+    assert channel.history_kwargs["oldest_first"] is True
+
+
+async def test_skips_unavailable_channel(bot, backend, monkeypatch, caplog) -> None:
+    monkeypatch.setattr(bot, "get_channel", lambda channel_id: None)
+
+    await bot.on_ready()
+
+    assert backend.sent == []
+    assert f"channel {CHANNEL_ID} is not available" in caplog.text
+
+
+async def test_survives_history_error(bot, channel, caplog) -> None:
+    response = SimpleNamespace(status=403, reason="Forbidden")
+    channel.error = discord.Forbidden(response, "Missing Access")
+
+    await bot.on_ready()
+
+    assert f"history of channel {CHANNEL_ID} was not read" in caplog.text
