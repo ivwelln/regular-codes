@@ -13,7 +13,7 @@ async def main() -> None:
     settings = Settings()
 
     async with create_backend_http_client(settings) as http:
-        bot = PromoBot(BackendClient(http), settings.channel_ids)
+        bot = PromoBot(BackendClient(http), settings.channel_ids, settings.history_days)
         async with bot:
             await bot.start(settings.discord_token.get_secret_value())
 
